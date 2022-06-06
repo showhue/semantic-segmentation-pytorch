@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  semantic-segmentation-pytorch:
+    build: semantic-segmentation-pytorch
+    tty: true
+    environment:
+      - ENVIRONMENT=beta
+    volumes:
+      - type: bind
+        source: ../
+        target: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: [gpu]
