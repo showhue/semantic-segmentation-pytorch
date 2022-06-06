@@ -15,3 +15,7 @@ services:
         reservations:
           devices:
           - capabilities: [gpu]
+    command: >
+      sh -c "cd /app &&
+             python test.py --imgs test_images --cfg config/ade20k-hrnetv2.yaml TEST.result output &&
+             python classify.py -i test_images -o hrnetv2.csv"
