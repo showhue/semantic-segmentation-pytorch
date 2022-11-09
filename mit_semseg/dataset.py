@@ -266,6 +266,16 @@ class TestDataset(BaseDataset):
         img = Image.open(image_path).convert('RGB')
 
         ori_width, ori_height = img.size
+        max_size = max(ori_width, ori_height)
+        if max_size > 1024:
+            if ori_width > ori_height:
+                target_width = 1024
+                target_height = round(ori_height * 1024 / ori_width)
+            else:
+                target_width = round(ori_width * 1024 / ori_height)
+                target_height = 1024
+            img = imresize(img, (target_width, target_height), interp='bilinear')
+            ori_width, ori_height = img.size
 
         img_resized_list = []
         for this_short_size in self.imgSizes:
