@@ -7,14 +7,14 @@ from typing import List
 
 # Numerical libs
 import numpy as np
+import pandas as pd
 import requests
 import skimage
 import torch
 import torch.nn as nn
-from google.cloud import storage
 
-from mit_semseg.config import cfg
 # Our libs
+from mit_semseg.config import cfg
 from mit_semseg.dataset import TestDataset
 from mit_semseg.lib.nn import user_scattered_collate
 from mit_semseg.lib.utils import as_numpy
@@ -179,9 +179,9 @@ def classify(pred) -> str:
       bg_is_above_base = True
 
   if (intersection > 0 and intersection < 1) or (intersection == 0 and bg_is_above_base == 1):
-    return "Product_Straight"
+    return (intersection, "Product_Straight")
   else:
-    return "Product_Top"
+    return (intersection, "Product_Top")
 
 class SemanticSegmentation():
   def __init__(self, cfg_file='./config/ade20k-hrnetv2.yaml') -> None:
@@ -223,8 +223,8 @@ class SemanticSegmentation():
 
     self.segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
 
-  def forward(self, imgs: List[bytes]) -> str:
-    cfg.list_test = [{'fpath_img': io.BytesIO(x)} for x in imgs]
+  def forward(self, imgs: List[str]) -> str:
+    cfg.list_test = [{'fpath_img': img} for img in imgs]
     dataset_test = TestDataset(
       cfg.list_test,
       cfg.DATASET
@@ -266,19 +266,23 @@ class SemanticSegmentation():
     return classify(pred)
 
 def main():
-  storage_client = storage.Client(project='ire-lab-200005')
-  client = storage_client.get_bucket('recommendation-beta')
+  IMAGE_DIR = 'test_images'
 
-  ref_image_id = '1613992441_35cd0deb-f670-4531-a526-6e3b26efdbdc'
-  key = os.path.join('ref-images', ref_image_id)
-  blob = client.blob(key)
-
-  import time
-  t = time.time()
   model = SemanticSegmentation()
-  classification_type = model.forward([blob.download_as_bytes()])
-  print(classification_type)
-  print(time.time() - t)
+
+  output_dict = []
+  for root, _, files in os.walk(IMAGE_DIR):
+    for f in files:
+      intersection, classification_type = model.forward([os.path.join(root, f)])
+      DATA = {
+        'filename': f,
+        'intersection': intersection,
+        'classification_type': classification_type
+      }
+      output_dict.append(DATA)
+
+  df = pd.DataFrame(output_dict)
+  df.to_csv('hrnetv2', index=False)
 
 if __name__ == "__main__":
   main()
