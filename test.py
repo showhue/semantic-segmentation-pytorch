@@ -408,7 +408,7 @@ def main(cfg, gpu):
         batch_size=cfg.TEST.batch_size,
         shuffle=False,
         collate_fn=user_scattered_collate,
-        num_workers=2,
+        num_workers=0,
         drop_last=True)
     if torch.cuda.is_available():
         segmentation_module.cuda()
